@@ -1,0 +1,11 @@
+fastapi>=0.110
+uvicorn[standard]>=0.29
+python-multipart>=0.0.9
+numpy>=1.24
+scipy>=1.10
+pandas>=2.0
+neurokit2>=0.2.10
+# Multi-formato
+pyedflib>=0.1.38       # EDF / EDF+
+wfdb>=4.1              # MIT-BIH / PhysioNet
+pydicom>=2.4           # DICOM Waveform

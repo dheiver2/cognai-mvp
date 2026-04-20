@@ -1,0 +1,299 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<title>cognai — Análise de Holter / ECG</title>
+<script src="https://cdn.plot.ly/plotly-2.35.2.min.js" charset="utf-8"></script>
+<link rel="stylesheet" href="/static/styles.css" />
+</head>
+<body>
+
+<!-- ==================== SIDEBAR ==================== -->
+<aside class="sidebar">
+  <div class="brand">
+    <svg class="brand-mark" viewBox="0 0 48 44" xmlns="http://www.w3.org/2000/svg" fill="none" style="filter: drop-shadow(0 0 10px rgba(255,59,74,.45));">
+      <defs>
+        <linearGradient id="heartGrad" x1="0" y1="0" x2="0" y2="1">
+          <stop offset="0%" stop-color="#ff3b4a"/>
+          <stop offset="100%" stop-color="#e11d48"/>
+        </linearGradient>
+      </defs>
+      <path d="M 24 42 C 5.5 30, -1 14.5, 10.5 6.5 C 18.5 1.5, 23 9, 24 15 C 25 9, 29.5 1.5, 37.5 6.5 C 49 14.5, 42.5 30, 24 42 Z" fill="url(#heartGrad)"/>
+      <path d="M 2 26 L 13 26 L 16 28.5 L 19 14 L 22 35 L 25.5 26 L 28 23 L 30 26 L 46 26" stroke="#0a0a0a" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"/>
+    </svg>
+    <div class="brand-text">
+      <div class="brand-name">cognai</div>
+      <div class="brand-tag">Holter · ECG · AI</div>
+    </div>
+  </div>
+
+  <nav class="nav">
+    <div class="nav-group">
+      <div class="nav-label">Paciente</div>
+      <button class="nav-item" data-tab="patient">
+        <span class="nav-icon">◉</span><span>Dados do exame</span>
+      </button>
+    </div>
+
+    <div class="nav-group">
+      <div class="nav-label">Resumo</div>
+      <button class="nav-item active" data-tab="overview">
+        <span class="nav-icon">▦</span><span>Dashboard</span>
+      </button>
+    </div>
+
+    <div class="nav-group">
+      <div class="nav-label">Revisão do ECG</div>
+      <button class="nav-item" data-tab="ecg">
+        <span class="nav-icon">∿</span><span>Traçado ECG</span>
+      </button>
+      <button class="nav-item" data-tab="disclosure">
+        <span class="nav-icon">≣</span><span>Full Disclosure</span>
+      </button>
+    </div>
+
+    <div class="nav-group">
+      <div class="nav-label">Tendências</div>
+      <button class="nav-item" data-tab="trends">
+        <span class="nav-icon">↗</span><span>FC e ST</span>
+      </button>
+      <button class="nav-item" data-tab="histograms">
+        <span class="nav-icon">▮</span><span>Histogramas</span>
+      </button>
+    </div>
+
+    <div class="nav-group">
+      <div class="nav-label">Análises</div>
+      <button class="nav-item" data-tab="hrv">
+        <span class="nav-icon">◈</span><span>HRV / Poincaré</span>
+      </button>
+      <button class="nav-item" data-tab="events">
+        <span class="nav-icon">⚠</span><span>Arritmias</span>
+      </button>
+    </div>
+
+    <div class="nav-group">
+      <div class="nav-label">Entrega</div>
+      <button class="nav-item" data-tab="report">
+        <span class="nav-icon">▤</span><span>Laudo</span>
+      </button>
+    </div>
+  </nav>
+
+  <div class="sidebar-foot">
+    <div class="pill">MVP · heurístico</div>
+    <div class="foot-note">Não substitui avaliação médica.</div>
+  </div>
+</aside>
+
+<!-- ==================== MAIN ==================== -->
+<div class="main-wrap">
+
+  <!-- Topbar -->
+  <header class="topbar">
+    <div class="topbar-title">
+      <span id="panel-title">Dashboard</span>
+      <span id="metaLine" class="meta"></span>
+    </div>
+    <div class="file-picker">
+      <select id="fileSelect" title="Arquivo"></select>
+      <select id="channelSelect" title="Canal">
+        <option value="0">V1</option>
+        <option value="1" selected>V3</option>
+        <option value="2">V5</option>
+      </select>
+      <button id="reloadBtn" class="btn-sec">Atualizar</button>
+      <button id="analyzeBtn" class="btn-primary">Analisar</button>
+      <label class="upload-btn">
+        <input type="file" id="uploadInput" accept=".txt" hidden />
+        Enviar .txt
+      </label>
+    </div>
+  </header>
+
+  <div id="status" class="statusbar">
+    <span class="status-dot" id="statusDot"></span>
+    <span id="statusText">Pronto.</span>
+  </div>
+
+  <main>
+  <!-- PAINEL: Paciente -->
+  <section class="panel" id="panel-patient">
+    <div class="patient-grid">
+      <div class="plot-card">
+        <div class="plot-title">Identificação</div>
+        <table class="info-table" id="patient-table"></table>
+      </div>
+      <div class="plot-card">
+        <div class="plot-title">Resumo do exame</div>
+        <table class="info-table" id="exam-table"></table>
+      </div>
+    </div>
+  </section>
+
+  <!-- PAINEL: Resumo / Dashboard -->
+  <section class="panel active" id="panel-overview">
+    <div class="cards">
+      <div class="card card-hr">
+        <div class="card-label">FC MÉDIA</div>
+        <div class="card-value" id="card-hr-mean">—</div>
+        <div class="card-unit">bpm</div>
+        <div class="card-foot"><span id="card-hr-min">—</span> min / <span id="card-hr-max">—</span> max</div>
+      </div>
+      <div class="card card-beats">
+        <div class="card-label">BATIMENTOS</div>
+        <div class="card-value" id="card-beats">—</div>
+        <div class="card-unit">total</div>
+        <div class="card-foot"><span id="card-duration">—</span> h de gravação</div>
+      </div>
+      <div class="card card-hrv">
+        <div class="card-label">SDNN</div>
+        <div class="card-value" id="card-sdnn">—</div>
+        <div class="card-unit">ms</div>
+        <div class="card-foot">RMSSD <span id="card-rmssd">—</span> / pNN50 <span id="card-pnn50">—</span>%</div>
+      </div>
+      <div class="card card-af">
+        <div class="card-label">EVENTOS</div>
+        <div class="card-value" id="card-events">—</div>
+        <div class="card-unit">episódios</div>
+        <div class="card-foot">
+          <span id="card-pauses">—</span> pausas / <span id="card-pvc">—</span> ext. / <span id="card-af">—</span> susp. FA
+        </div>
+      </div>
+      <div class="card card-st">
+        <div class="card-label">SEGMENTO ST</div>
+        <div class="card-value" id="card-st-class">—</div>
+        <div class="card-unit">classificação</div>
+        <div class="card-foot">Δmáx +<span id="card-st-up">—</span> / −<span id="card-st-dn">—</span> mV</div>
+      </div>
+    </div>
+    <div class="grid-2">
+      <div class="plot-card">
+        <div class="plot-title">Tendência de Frequência Cardíaca (24 h)</div>
+        <div id="plot-hr-trend" class="plot"></div>
+      </div>
+      <div class="plot-card">
+        <div class="plot-title">Tacograma (RR)</div>
+        <div id="plot-tacho" class="plot"></div>
+      </div>
+    </div>
+    <div class="plot-card">
+      <div class="plot-title">Resumo horário</div>
+      <div id="plot-hourly" class="plot"></div>
+    </div>
+  </section>
+
+  <!-- PAINEL: ECG -->
+  <section class="panel" id="panel-ecg">
+    <div class="ecg-controls">
+      <label>Início (s) <input type="number" id="ecgStart" value="0" min="0" step="1" /></label>
+      <label>Duração
+        <select id="ecgDur">
+          <option value="5">5 s</option>
+          <option value="10" selected>10 s</option>
+          <option value="20">20 s</option>
+          <option value="30">30 s</option>
+          <option value="60">60 s</option>
+        </select>
+      </label>
+      <button class="btn-sec" onclick="shiftEcg(-10)">← 10 s</button>
+      <button class="btn-sec" onclick="shiftEcg(10)">10 s →</button>
+      <button class="btn-primary" id="ecgLoadBtn">Exibir</button>
+      <span class="hint">25 mm/s · 10 mm/mV — padrão clínico</span>
+    </div>
+    <div class="plot-card ecg-grid-card">
+      <div id="plot-ecg" class="plot plot-ecg"></div>
+    </div>
+  </section>
+
+  <!-- PAINEL: Full disclosure -->
+  <section class="panel" id="panel-disclosure">
+    <div class="plot-card">
+      <div class="plot-title">Full Disclosure — envelope min/max do exame</div>
+      <div id="plot-disclosure" class="plot plot-tall"></div>
+      <div class="hint">Clique no gráfico para saltar ao trecho correspondente no ECG.</div>
+    </div>
+  </section>
+
+  <!-- PAINEL: Trends -->
+  <section class="panel" id="panel-trends">
+    <div class="plot-card">
+      <div class="plot-title">Trend de Frequência Cardíaca (min / média / máx por minuto)</div>
+      <div id="plot-hr-trend2" class="plot plot-tall"></div>
+    </div>
+    <div class="plot-card">
+      <div class="plot-title">Trend do Segmento ST</div>
+      <div id="plot-st-trend" class="plot"></div>
+    </div>
+  </section>
+
+  <!-- PAINEL: Histogramas -->
+  <section class="panel" id="panel-histograms">
+    <div class="grid-2">
+      <div class="plot-card">
+        <div class="plot-title">Distribuição de Frequência Cardíaca</div>
+        <div id="plot-hr-hist" class="plot plot-tall"></div>
+      </div>
+      <div class="plot-card">
+        <div class="plot-title">Distribuição de RR</div>
+        <div id="plot-rr-hist" class="plot plot-tall"></div>
+      </div>
+    </div>
+  </section>
+
+  <!-- PAINEL: HRV / Poincaré -->
+  <section class="panel" id="panel-hrv">
+    <div class="grid-2">
+      <div class="plot-card">
+        <div class="plot-title">Poincaré (RRₙ vs RRₙ₊₁)</div>
+        <div id="plot-poincare" class="plot plot-tall"></div>
+      </div>
+      <div class="plot-card">
+        <div class="plot-title">PSD — análise espectral (VLF / LF / HF)</div>
+        <div id="plot-psd" class="plot plot-tall"></div>
+      </div>
+    </div>
+    <div class="plot-card">
+      <div class="plot-title">Resumo HRV</div>
+      <table class="hrv-table" id="hrv-table"></table>
+    </div>
+  </section>
+
+  <!-- PAINEL: Eventos -->
+  <section class="panel" id="panel-events">
+    <div class="events-toolbar">
+      <label><input type="checkbox" data-evtype="pausas" checked /> Pausas</label>
+      <label><input type="checkbox" data-evtype="extrassistoles" checked /> Extrassístoles</label>
+      <label><input type="checkbox" data-evtype="taquicardia" checked /> Taquicardia</label>
+      <label><input type="checkbox" data-evtype="taquicardia_sustentada" checked /> Taquicardia sustentada</label>
+      <label><input type="checkbox" data-evtype="bradicardia" checked /> Bradicardia</label>
+      <label><input type="checkbox" data-evtype="suspeita_fa" checked /> Suspeita de FA</label>
+    </div>
+    <div class="plot-card no-pad">
+      <table class="events-table">
+        <thead>
+          <tr>
+            <th>Tipo</th><th>Início</th><th>Fim</th><th>Duração</th><th>Detalhe</th><th></th>
+          </tr>
+        </thead>
+        <tbody id="events-body"></tbody>
+      </table>
+    </div>
+  </section>
+
+  <!-- PAINEL: Laudo -->
+  <section class="panel" id="panel-report">
+    <div class="report-toolbar">
+      <button class="btn-primary" id="printBtn">Imprimir</button>
+      <button class="btn-sec" id="downloadBtn">Baixar .md</button>
+    </div>
+    <div class="report" id="reportContent">Gere uma análise para visualizar o laudo.</div>
+  </section>
+
+  </main>
+</div>
+
+<script src="/static/app.js"></script>
+</body>
+</html>

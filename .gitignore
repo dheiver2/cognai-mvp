@@ -1,0 +1,54 @@
+# Python
+__pycache__/
+*.pyc
+*.pyo
+*.pyd
+.Python
+*.egg-info/
+.venv/
+venv/
+env/
+.ipynb_checkpoints/
+
+# Node / Vite
+node_modules/
+dist/
+.DS_Store
+*.log
+server.log
+
+# Build artifacts (regenerados)
+backend/web*/
+
+# Cache de análise (regenerado no primeiro run)
+cache/*.npy
+cache/*.json
+
+# Dados sensíveis / exames (LGPD) — NÃO comitar exames de pacientes!
+data/*.txt
+data/*.edf
+data/*.edf+
+data/*.dat
+data/*.hea
+data/*.dcm
+data/*.dicom
+data/*.xml
+data/*.aecg
+data/*.csv
+data/*.tsv
+
+# IDE
+.idea/
+.vscode/
+*.swp
+*.swo
+
+# Env files (NUNCA comitar!)
+.env
+.env.local
+.env.production
+*.pem
+*.key
+
+# Sistema
+Thumbs.db

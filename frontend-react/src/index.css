@@ -1,0 +1,65 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+@layer base {
+  * { border-color: theme('colors.ink.500'); }
+  body { -webkit-font-smoothing: antialiased; font-feature-settings: "ss01", "cv11"; }
+
+  ::selection { background: rgba(255,59,74,.4); color: #fff; }
+  html { scroll-behavior: smooth; }
+}
+
+@layer components {
+  .glass {
+    @apply bg-ink-100/60 backdrop-blur-xl border border-ink-500/60;
+  }
+
+  .glow-brand {
+    @apply shadow-[0_0_40px_rgba(255,59,74,0.15)];
+  }
+
+  .grid-pattern {
+    background-image:
+      linear-gradient(rgba(255,255,255,.03) 1px, transparent 1px),
+      linear-gradient(90deg, rgba(255,255,255,.03) 1px, transparent 1px);
+    background-size: 48px 48px;
+  }
+
+  .gradient-heading {
+    background: linear-gradient(135deg, #ffffff 0%, #cfcfcf 60%, #7a7a7a 100%);
+    -webkit-background-clip: text;
+    background-clip: text;
+    -webkit-text-fill-color: transparent;
+  }
+
+  .btn {
+    @apply inline-flex items-center justify-center gap-2 rounded-lg font-semibold transition-all disabled:opacity-50 disabled:pointer-events-none;
+  }
+  .btn-primary {
+    @apply bg-ink-950 text-ink-0 hover:bg-ink-900 px-4 py-2 text-sm;
+  }
+  .btn-brand {
+    @apply bg-brand text-white hover:brightness-110 px-4 py-2 text-sm shadow-glow;
+  }
+  .btn-ghost {
+    @apply bg-ink-200 text-ink-900 border border-ink-500 hover:border-ink-700 hover:text-ink-950 px-4 py-2 text-sm;
+  }
+
+  /* ECG medical grid background */
+  .ecg-grid-bg {
+    background-color: #000;
+    background-image:
+      linear-gradient(rgba(255,59,74,.08) 1px, transparent 1px),
+      linear-gradient(90deg, rgba(255,59,74,.08) 1px, transparent 1px),
+      linear-gradient(rgba(255,59,74,.03) 1px, transparent 1px),
+      linear-gradient(90deg, rgba(255,59,74,.03) 1px, transparent 1px);
+    background-size: 40px 40px, 40px 40px, 8px 8px, 8px 8px;
+  }
+}
+
+/* scrollbars */
+::-webkit-scrollbar { width: 8px; height: 8px; }
+::-webkit-scrollbar-track { background: transparent; }
+::-webkit-scrollbar-thumb { background: #1c1c1c; border-radius: 4px; }
+::-webkit-scrollbar-thumb:hover { background: #2a2a2a; }

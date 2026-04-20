@@ -1,0 +1,35 @@
+name: Deploy cognai to VPS
+
+on:
+  push:
+    branches: [main]
+  workflow_dispatch:
+
+jobs:
+  deploy:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Setup SSH
+        uses: webfactory/ssh-agent@v0.9.0
+        with:
+          ssh-private-key: ${{ secrets.SSH_PRIVATE_KEY }}
+
+      - name: Adicionar VPS ao known_hosts
+        run: |
+          mkdir -p ~/.ssh
+          ssh-keyscan -H ${{ secrets.VPS_HOST }} >> ~/.ssh/known_hosts
+
+      - name: Deploy via SSH
+        env:
+          VPS_USER: ${{ secrets.VPS_USER }}
+          VPS_HOST: ${{ secrets.VPS_HOST }}
+          DOMAIN:   ${{ secrets.DOMAIN }}
+          REPO_URL: ${{ github.server_url }}/${{ github.repository }}.git
+        run: |
+          ssh $VPS_USER@$VPS_HOST "
+            set -e
+            curl -fsSL $REPO_URL/raw/${{ github.ref_name }}/deploy/setup.sh -o /tmp/setup.sh
+            bash /tmp/setup.sh --repo='$REPO_URL' --branch='${{ github.ref_name }}' ${DOMAIN:+--domain=$DOMAIN}
+          "

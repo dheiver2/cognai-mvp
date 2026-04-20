@@ -1,0 +1,33 @@
+[Unit]
+Description=cognai — Holter/ECG Analysis API
+After=network.target
+Requires=network.target
+
+[Service]
+Type=simple
+User=__APP_USER__
+Group=__APP_USER__
+WorkingDirectory=__APP_DIR__
+Environment="PYTHONUNBUFFERED=1"
+Environment="HOLTER_DATA_DIR=__APP_DIR__/data"
+Environment="HOLTER_CACHE_DIR=__APP_DIR__/cache"
+ExecStart=__APP_DIR__/.venv/bin/uvicorn backend.main:app \
+          --host 127.0.0.1 --port __PORT__ \
+          --workers 2 --proxy-headers --forwarded-allow-ips='*'
+Restart=always
+RestartSec=5
+StandardOutput=journal
+StandardError=journal
+
+# Hardening
+NoNewPrivileges=true
+PrivateTmp=true
+ProtectSystem=strict
+ProtectHome=true
+ReadWritePaths=__APP_DIR__/data __APP_DIR__/cache __APP_DIR__/logs
+ProtectKernelTunables=true
+ProtectKernelModules=true
+ProtectControlGroups=true
+
+[Install]
+WantedBy=multi-user.target
