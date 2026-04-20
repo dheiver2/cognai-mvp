@@ -20,6 +20,9 @@ from __future__ import annotations
 import numpy as np
 from scipy.signal import welch
 
+# Compatibilidade NumPy 2.0: np.trapz virou np.trapezoid
+_trapz = getattr(np, "trapezoid", None) or getattr(np, "trapz")
+
 
 def time_domain(rr_s: np.ndarray) -> dict:
     """Métricas tempo (RR em segundos)."""
@@ -67,7 +70,7 @@ def frequency_domain(rr_s: np.ndarray, fs_interp: float = 4.0) -> dict:
         m = (f >= lo) & (f < hi)
         if not np.any(m):
             return 0.0
-        return float(np.trapz(p[m], f[m]) * 1e6)  # para ms²
+        return float(_trapz(p[m], f[m]) * 1e6)  # para ms²
 
     vlf = band_power(f, p, 0.003, 0.04)
     lf = band_power(f, p, 0.04, 0.15)

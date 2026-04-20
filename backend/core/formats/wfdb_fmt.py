@@ -19,14 +19,26 @@ class WFDBParser(BaseFormatParser):
     )
 
     def detect(self, path: Path) -> bool:
-        # Para MIT-BIH, precisamos do .hea (cabeçalho)
-        if path.suffix.lower() == ".hea":
-            return True
-        if path.suffix.lower() == ".dat":
-            return path.with_suffix(".hea").exists()
-        return False
+        # Aceita .hea sempre, e .dat (mesmo sem .hea) — deixamos parse() validar e gerar
+        # um erro mais claro.
+        return path.suffix.lower() in (".hea", ".dat")
 
     def parse(self, path: Path) -> tuple[np.ndarray, ECGMetadata]:
+        # Valida que temos o par .dat + .hea
+        hea = path.with_suffix(".hea")
+        dat = path.with_suffix(".dat")
+        if not hea.exists():
+            raise ValueError(
+                f"MIT-BIH requer o par '{path.stem}.dat' + '{path.stem}.hea'. "
+                f"O arquivo '{hea.name}' não foi encontrado. "
+                f"Faça upload dos dois arquivos (.dat e .hea) com o mesmo nome base."
+            )
+        if not dat.exists():
+            raise ValueError(
+                f"MIT-BIH requer o par '{path.stem}.dat' + '{path.stem}.hea'. "
+                f"O arquivo '{dat.name}' não foi encontrado."
+            )
+
         try:
             import wfdb
         except ImportError as e:
