@@ -24,6 +24,7 @@ REPO_URL=""
 BRANCH="main"
 APP_PORT="8765"
 SKIP_SSL="0"
+NO_CLONE="0"
 
 for arg in "$@"; do
   case "$arg" in
@@ -32,11 +33,12 @@ for arg in "$@"; do
     --branch=*)  BRANCH="${arg#*=}" ;;
     --port=*)    APP_PORT="${arg#*=}" ;;
     --no-ssl)    SKIP_SSL="1" ;;
+    --no-clone)  NO_CLONE="1" ;;
     *) echo "Flag desconhecida: $arg"; exit 1 ;;
   esac
 done
 
-[ -z "$REPO_URL" ] && { echo "ERRO: use --repo=<url-git>"; exit 1; }
+[ -z "$REPO_URL" ] && [ "$NO_CLONE" = "0" ] && { echo "ERRO: use --repo=<url-git> ou --no-clone"; exit 1; }
 
 APP_USER="cognai"
 APP_DIR="/opt/cognai"
@@ -74,15 +76,21 @@ fi
 ok "sistema OK  ($(python3 --version | awk '{print $2}')  /  node $(node -v))"
 
 # ---------- 3. Código ----------
-log "Clonando/atualizando repositório em $APP_DIR"
-if [ -d "$APP_DIR/.git" ]; then
-  sudo -u "$APP_USER" git -C "$APP_DIR" fetch --all --quiet
-  sudo -u "$APP_USER" git -C "$APP_DIR" reset --hard "origin/$BRANCH"
+if [ "$NO_CLONE" = "1" ]; then
+  log "Pulando clone — código já presente em $APP_DIR (modo rsync)"
+  chown -R "$APP_USER:$APP_USER" "$APP_DIR"
+  ok "permissões aplicadas"
 else
-  rm -rf "$APP_DIR"/* "$APP_DIR"/.[!.]* 2>/dev/null || true
-  sudo -u "$APP_USER" git clone --branch "$BRANCH" --depth 1 "$REPO_URL" "$APP_DIR"
+  log "Clonando/atualizando repositório em $APP_DIR"
+  if [ -d "$APP_DIR/.git" ]; then
+    sudo -u "$APP_USER" git -C "$APP_DIR" fetch --all --quiet
+    sudo -u "$APP_USER" git -C "$APP_DIR" reset --hard "origin/$BRANCH"
+  else
+    rm -rf "$APP_DIR"/* "$APP_DIR"/.[!.]* 2>/dev/null || true
+    sudo -u "$APP_USER" git clone --branch "$BRANCH" --depth 1 "$REPO_URL" "$APP_DIR"
+  fi
+  ok "repo sincronizado ($BRANCH)"
 fi
-ok "repo sincronizado ($BRANCH)"
 
 # ---------- 4. Python venv ----------
 log "Instalando dependências Python em $VENV_DIR"

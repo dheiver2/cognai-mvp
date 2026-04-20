@@ -21,15 +21,33 @@ jobs:
           mkdir -p ~/.ssh
           ssh-keyscan -H ${{ secrets.VPS_HOST }} >> ~/.ssh/known_hosts
 
-      - name: Deploy via SSH
+      - name: Preparar diretório na VPS
+        env:
+          VPS_USER: ${{ secrets.VPS_USER }}
+          VPS_HOST: ${{ secrets.VPS_HOST }}
+        run: |
+          ssh $VPS_USER@$VPS_HOST "mkdir -p /opt/cognai && id -u cognai >/dev/null 2>&1 || useradd -r -s /bin/bash -d /opt/cognai cognai"
+
+      - name: Sincronizar código via rsync
+        env:
+          VPS_USER: ${{ secrets.VPS_USER }}
+          VPS_HOST: ${{ secrets.VPS_HOST }}
+        run: |
+          rsync -avz --delete \
+            --exclude='.git' \
+            --exclude='node_modules' \
+            --exclude='__pycache__' \
+            --exclude='frontend-react/node_modules' \
+            --exclude='cache/*' --include='cache/.gitkeep' \
+            --exclude='data/*' --include='data/.gitkeep' \
+            --exclude='backend/web' --exclude='backend/web-v2' --exclude='backend/web-v3' \
+            --exclude='*.log' --exclude='.venv' \
+            ./ $VPS_USER@$VPS_HOST:/opt/cognai/
+
+      - name: Executar setup.sh na VPS
         env:
           VPS_USER: ${{ secrets.VPS_USER }}
           VPS_HOST: ${{ secrets.VPS_HOST }}
           DOMAIN:   ${{ secrets.DOMAIN }}
-          REPO_URL: ${{ github.server_url }}/${{ github.repository }}.git
         run: |
-          ssh $VPS_USER@$VPS_HOST "
-            set -e
-            curl -fsSL $REPO_URL/raw/${{ github.ref_name }}/deploy/setup.sh -o /tmp/setup.sh
-            bash /tmp/setup.sh --repo='$REPO_URL' --branch='${{ github.ref_name }}' ${DOMAIN:+--domain=$DOMAIN}
-          "
+          ssh $VPS_USER@$VPS_HOST "bash /opt/cognai/deploy/setup.sh --repo=local --no-clone ${DOMAIN:+--domain=$DOMAIN}"
